@@ -79,8 +79,7 @@ async function start() {
         headless: false //设置为true就不会打开浏览器
     });
     page = await browser.newPage();
-    // 1.打开前端网
-    await page.emulate(iPhone);
+
     await page.goto('https://www.qdfuns.com/');
     // await timeout(1000);
     //监听浏览器页面更新

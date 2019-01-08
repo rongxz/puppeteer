@@ -6,6 +6,8 @@ let browser = null;
 let page = null;
 let btn_position = null;
 
+const devices = require('puppeteer/DeviceDescriptors');
+const iPhone = devices['iPhone 6 Plus'];
 
 async function start() {
     const width = 1920
@@ -22,38 +24,39 @@ async function start() {
     // // 在一个原生的上下文中创建一个新页面
     // page = await context.newPage();
 
+
     page = await browser.newPage();
 
     await util.preparePageForTests(page);
     //拦截图片
-    await page.setRequestInterception(true);
-    page.on('request', interceptedRequest => {
-        // console.log("有请求啦"+interceptedRequest.url());
-        if (interceptedRequest.url().endsWith('.jpg') || interceptedRequest.url().endsWith('.png'))
-            interceptedRequest.abort();
-        else
-            interceptedRequest.continue();
-    });
+    // await page.setRequestInterception(true);
+    // page.on('request', interceptedRequest => {
+    //     // console.log("有请求啦"+interceptedRequest.url());
+    //     if (interceptedRequest.url().endsWith('.jpg') || interceptedRequest.url().endsWith('.png'))
+    //         interceptedRequest.abort();
+    //     else
+    //         interceptedRequest.continue();
+    // });
     await page.setViewport({
         width,
         height
     });
-
+    // await page.emulate(iPhone);
     await page.goto('https://login.taobao.com/');
     await login();
-    await page.goto("https://detail.tmall.com/item.htm?id=583227545776");
+    await page.goto("https://item.taobao.com/item.htm?spm=a1z0k.7628869.0.0.376073036fO8aW&id=581939039549&_u=t2dmg8j26111");
     // 监听浏览器页面更新
     browser.on('targetchanged', res => {
         console.log(new Date().getTime() + "------------新页面：url：" + res._targetInfo.url + "-------------");
     });
-    page.on('load', async (res) => {
+    page.on('load', async(res) => {
         console.log(new Date().getTime() + "------>page load");
         if (page.url().indexOf('login.taobao.com') > -1) {
             login();
         } else if (page.url().indexOf('detail.tmall.com') > -1 || page.url().indexOf('detail.taobao.com') > -1) {
             seckill()
         } else if (page.url().indexOf('alipay.com/standard/') > -1) {
-            payMoney()
+            // payMoney()
         }
     });
     page.on('domcontentloaded', (res) => {
@@ -93,7 +96,7 @@ async function login() {
     await page.click('#TPL_username_1', {
         button: 'middle'
     })
-    await page.waitFor(300)
+    await page.waitFor(1000)
     await page.type('#TPL_username_1', accountInfo.username, {
         delay: 50
     })
@@ -132,7 +135,6 @@ async function login() {
             page.waitForNavigation()
         ]);
     }
-
 }
 
 
@@ -145,8 +147,8 @@ async function login() {
 async function getBtnPosition(selector) {
     // console.log(selector);
     await page.waitForSelector(selector)
-    //这里传递的参数需要写在后面
-    let btn_position = await page.evaluate(async (selector) => {
+        //这里传递的参数需要写在后面
+    let btn_position = await page.evaluate(async(selector) => {
         let btn_left = document.querySelector(selector).getBoundingClientRect().left + document.querySelector(selector).clientWidth / 2;
         let btn_top = document.querySelector(selector).getBoundingClientRect().top + document.querySelector(selector).clientHeight / 2;
         return {
@@ -210,17 +212,8 @@ async function seckill() {
     let start = new Date().getTime();
     console.log(start + " 进入到了抢购页面");
     //等待购买按钮的出现
-    await page.waitForFunction(() =>{
-        if(document.querySelector(".tb-action")){
-            return document.querySelector(".tb-action").style.display != 'none'&&!document.querySelector(".tb-btn-buy").className.includes("tb-hidden")
-        }else{
-            console.log("已经下架了");
-            return false;
-        }
-    }, {
-        timeout: 0
-    });
-    console.log(new Date().getTime() + "--------->点击购买按钮，耗时 " + (new Date().getTime() + -start) + "ms"+"<---------");
+    await page.waitForFunction(() => document.querySelector(".tb-action").style.display != 'none' && !document.querySelector(".tb-btn-buy").className.includes("tb-hidden"), { timeout: 0 });
+    console.log(new Date().getTime() + "--------->点击购买按钮，耗时 " + (new Date().getTime() + -start) + "ms" + "<---------");
     await Promise.all([
         await page.click("#J_LinkBuy"),
         await page.waitForNavigation({
@@ -233,8 +226,8 @@ async function seckill() {
 //购买
 async function doPay() {
     let start = new Date().getTime();
-    await page.waitForSelector(".go-btn");
-    console.log("--------->付款耗时:"+(new Date().getTime() - start)+"<----------");
+    // await page.waitForSelector(".go-btn");
+    console.log("--------->付款耗时:" + (new Date().getTime() - start) + "<----------");
     await page.click(".go-btn");
     // return
 }
